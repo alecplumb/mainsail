@@ -9,6 +9,7 @@ import { detect } from 'detect-browser'
 import semver from 'semver'
 import { minBrowserVersions } from '@/store/variables'
 import { GuiMaintenanceStateEntry } from '@/store/gui/maintenance/types'
+import type { Aldis } from '@/types/aldis'
 
 export const getters: GetterTree<GuiNotificationState, RootState> = {
     getNotifications: (state, getters) => {
@@ -43,6 +44,9 @@ export const getters: GetterTree<GuiNotificationState, RootState> = {
 
         // TMC overheat warnings
         notifications = notifications.concat(getters['getNotificationsOverheatDrivers'])
+
+        // MCU firmware behind the Klipper host (aldis agent)
+        notifications = notifications.concat(getters['getNotificationsFirmware'])
 
         const mapType = {
             normal: 2,
@@ -447,6 +451,44 @@ export const getters: GetterTree<GuiNotificationState, RootState> = {
         return notifications.filter((entry) => {
             return !tmcwarningsDismisses.includes(entry.id)
         })
+    },
+
+    getNotificationsFirmware: (state, getters, rootState, rootGetters) => {
+        const notifications: GuiNotificationStateEntry[] = []
+
+        const hostVersion = rootGetters['server/firmware/getHost']?.software_version ?? null
+        const mcus: Aldis.Mcu[] = rootGetters['server/firmware/getOutdatedMcus'] ?? []
+        if (hostVersion === null || mcus.length === 0) return notifications
+
+        const date = rootState.server?.system_boot_at ?? new Date()
+
+        // the id carries the host version, so a dismissal ends with the next Klipper update
+        const dismisses = getters['getDismissByCategory']('firmware').map(
+            (dismiss: GuiNotificationStateDismissEntry) => dismiss.id
+        )
+
+        mcus.forEach((mcu) => {
+            const id = `${mcu.name}@${hostVersion}`
+            if (dismisses.includes(id)) return
+
+            notifications.push({
+                id: `firmware/${id}`,
+                priority: 'normal',
+                title: i18n.t('Machine.FirmwarePanel.NotificationTitle', { mcu: mcu.name }).toString(),
+                description: i18n
+                    .t('Machine.FirmwarePanel.NotificationDescription', {
+                        mcu: mcu.name,
+                        version: mcu.running_version ?? '?',
+                        hostVersion,
+                    })
+                    .toString(),
+                date,
+                dismissed: false,
+                url: '/config',
+            })
+        })
+
+        return notifications
     },
 
     getDismiss: (state, getters, rootState) => {
