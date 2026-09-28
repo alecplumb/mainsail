@@ -98,8 +98,8 @@
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import Panel from '@/components/ui/Panel.vue'
-import FirmwarePanelEntry from '@/components/panels/Machine/FirmwarePanel/Entry.vue'
-import FirmwarePanelUpdateHint from '@/components/panels/Machine/FirmwarePanel/UpdateHint.vue'
+import FirmwarePanelEntry from '@/components/panels/Machine/FirmwarePanel/FirmwareEntry.vue'
+import FirmwarePanelUpdateHint from '@/components/panels/Machine/FirmwarePanel/FirmwareUpdateHint.vue'
 import { mdiMemory, mdiProgressUpload, mdiRefresh } from '@mdi/js'
 import type { Aldis } from '@/types/aldis'
 
