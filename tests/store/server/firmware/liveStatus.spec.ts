@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isStatusResponse, reconcileRun, updatableMcus } from '@/store/server/firmware/helpers'
+import {
+    agentErrorMessage,
+    agentErrorReason,
+    isStatusResponse,
+    reconcileRun,
+    updatableMcus,
+} from '@/store/server/firmware/helpers'
 import type { FirmwareRunState } from '@/store/server/firmware/types'
 import type { Aldis } from '@/types/aldis'
 import status from '../../../fixtures/aldis-status.json'
@@ -38,5 +44,17 @@ describe('aldis status fixture', () => {
 
     it('leaves the run state alone without a run', () => {
         expect(reconcileRun(idle, (status as Aldis.StatusResponse).run)).toBe(idle)
+    })
+
+    it('unwraps the error Moonraker relays for a rejected agent request', () => {
+        // captured from Moonraker v0.11 relaying aldis 0.3.0's reply to an unknown method
+        const error = {
+            code: 424,
+            message: 'Agent aldis RPC error',
+            data: { code: -32601, data: { reason: 'unknown_method' }, message: 'unknown method "nope"' },
+        }
+
+        expect(agentErrorMessage(error)).toBe('unknown method "nope"')
+        expect(agentErrorReason(error)).toBe('unknown_method')
     })
 })
