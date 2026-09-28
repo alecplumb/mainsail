@@ -1,5 +1,5 @@
 <template>
-    <v-dialog :value="application !== ''" persistent max-width="800" class="mx-0">
+    <v-dialog :value="show" persistent max-width="800" class="mx-0">
         <v-card :loading="!complete">
             <template slot="progress">
                 <v-progress-linear color="primary" indeterminate></v-progress-linear>
@@ -8,18 +8,7 @@
                 <v-toolbar-title>
                     <span class="subheading">
                         <v-icon left>{{ mdiUpdate }}</v-icon>
-                        <template v-if="application.substr(0, 8) === 'recover_' && !complete">
-                            {{ $t('App.UpdateDialog.Recovering', { software: application.substr(8) }) }}
-                        </template>
-                        <template v-else-if="application.substr(0, 8) === 'recover_'">
-                            {{ $t('App.UpdateDialog.RecoveringDone', { software: application.substr(8) }) }}
-                        </template>
-                        <template v-else-if="!complete">
-                            {{ $t('App.UpdateDialog.Updating', { software: application }) }}
-                        </template>
-                        <template v-else>
-                            {{ $t('App.UpdateDialog.UpdatingDone', { software: application }) }}
-                        </template>
+                        {{ title }}
                     </span>
                 </v-toolbar-title>
             </v-toolbar>
@@ -30,14 +19,14 @@
                             <v-data-table
                                 ref="updaterLog"
                                 :headers="headers"
-                                :items="messages"
-                                item-key="date"
+                                :items="rows"
+                                item-key="index"
                                 hide-default-footer
                                 hide-default-header
                                 disable-pagination
                                 class="updaterLog"
                                 :custom-sort="customSort"
-                                sort-by="date"
+                                sort-by="index"
                                 :sort-desc="true"
                                 color="primary">
                                 <template #no-data>
@@ -46,11 +35,18 @@
 
                                 <template #item="{ item }">
                                     <tr>
-                                        <td class="log-cell title-cell py-2">
+                                        <td v-if="item.date" class="log-cell title-cell py-2">
                                             {{ formatTime(item.date) }}
                                         </td>
-                                        <td class="log-cell content-cell pl-0 py-2" colspan="2" style="width: 100%">
-                                            <span v-if="item.message" class="message" v-html="item.message"></span>
+                                        <td
+                                            class="log-cell content-cell py-2"
+                                            :class="{ 'pl-0': item.date }"
+                                            colspan="2"
+                                            style="width: 100%">
+                                            <template v-if="item.message">
+                                                <span v-if="htmlMessages" class="message" v-html="item.message"></span>
+                                                <span v-else class="message">{{ item.message }}</span>
+                                            </template>
                                         </td>
                                     </tr>
                                 </template>
@@ -60,7 +56,7 @@
                 </v-row>
                 <v-row>
                     <v-col class="text-center pt-5">
-                        <v-btn text :disabled="!complete" color="primary" @click="close">
+                        <v-btn text :disabled="!complete" color="primary" @click="$emit('close')">
                             {{ $t('Buttons.Close') }}
                         </v-btn>
                     </v-col>
@@ -72,14 +68,31 @@
 
 <script lang="ts">
 import Component from 'vue-class-component'
-import { Mixins, Ref, Watch } from 'vue-property-decorator'
+import { Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { ServerUpdateManagerStateMessages } from '@/store/server/updateManager/types'
 import { mdiUpdate } from '@mdi/js'
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
+import { UpdateDialogMessage } from '@/store/server/updateManager/types'
 
+interface UpdateDialogRow {
+    index: number
+    date: Date | null
+    message: string
+}
+
+/**
+ * Progress dialog for long-running updates. The parent owns the state: it decides when the
+ * dialog shows, feeds the log lines and handles `close` once the update is complete.
+ */
 @Component
 export default class TheUpdateDialog extends Mixins(BaseMixin) {
+    @Prop({ type: Boolean, required: true }) readonly show!: boolean
+    @Prop({ type: Boolean, default: true }) readonly complete!: boolean
+    @Prop({ type: String, required: true }) readonly title!: string
+    @Prop({ type: Array, default: () => [] }) readonly messages!: UpdateDialogMessage[]
+    // render messages as HTML (Moonraker update manager output), otherwise as plain text
+    @Prop({ type: Boolean, default: false }) readonly htmlMessages!: boolean
+
     @Ref() readonly updaterLogScroll!: OverlayScrollbarsComponent
     @Ref() readonly updaterLog!: HTMLDivElement
 
@@ -88,9 +101,8 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
     headers = [
         {
             text: 'Date',
-            value: 'date',
+            value: 'index',
             width: '1%',
-            dateType: 'Date',
         },
         {
             text: 'Message',
@@ -100,42 +112,17 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
         },
     ]
 
-    get application() {
-        return this.$store.state.server.updateManager.updateResponse.application ?? ''
+    get rows(): UpdateDialogRow[] {
+        return this.messages.map((message, index) => ({
+            index,
+            date: message.date ?? null,
+            message: message.message,
+        }))
     }
 
-    get messages(): ServerUpdateManagerStateMessages[] {
-        return this.$store.state.server.updateManager.updateResponse.messages ?? []
-    }
-
-    get complete() {
-        return this.$store.state.server.updateManager.updateResponse.complete ?? true
-    }
-
-    customSort(items: ServerUpdateManagerStateMessages[], sortBy: string[], sortDesc: boolean[]) {
-        const sortKey = sortBy[0]
-        const isDescending = sortDesc[0]
-
-        items.sort((a, b) => {
-            if (sortKey === 'date') {
-                const aDate = new Date(a.date).getTime()
-                const bDate = new Date(b.date).getTime()
-
-                if (!isDescending) return bDate - aDate
-
-                return aDate - bDate
-            }
-
-            if (sortKey === 'message') {
-                if (!isDescending) return a.message.toLowerCase().localeCompare(b.message.toLowerCase())
-
-                return b.message.toLowerCase().localeCompare(a.message.toLowerCase())
-            }
-
-            return 0
-        })
-
-        return items
+    // log lines always read oldest first, in the order they arrived
+    customSort(items: UpdateDialogRow[]) {
+        return items.sort((a, b) => a.index - b.index)
     }
 
     formatTime(date: Date) {
@@ -144,24 +131,6 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
         const seconds = date.getSeconds() < 10 ? '0' + date.getSeconds().toString() : date.getSeconds()
 
         return hours + ':' + minutes + ':' + seconds
-    }
-
-    close() {
-        if (
-            this.application !== null &&
-            this.complete &&
-            ['client', 'mainsail', 'full'].includes(this.application.toLowerCase())
-        ) {
-            window.location.reload()
-            return
-        }
-
-        this.$store.commit('server/updateManager/resetUpdateResponse')
-        this.$socket.emit(
-            'machine.update.status',
-            { refresh: false },
-            { action: 'server/updateManager/onUpdateStatus' }
-        )
     }
 
     @Watch('messages')

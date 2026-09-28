@@ -16,6 +16,12 @@ export interface ServerUpdateManagerState {
     }
 }
 
+// a log line of TheUpdateDialog (firmware update lines carry no date)
+export interface UpdateDialogMessage {
+    date?: Date | null
+    message: string
+}
+
 export interface ServerUpdateManagerStateMessages {
     date: Date
     message: string

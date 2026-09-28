@@ -9,7 +9,19 @@
                 </v-container>
             </v-main>
             <the-service-worker />
-            <the-update-dialog />
+            <the-update-dialog
+                :show="updateManagerApplication !== ''"
+                :complete="updateManagerComplete"
+                :title="updateManagerDialogTitle"
+                :messages="updateManagerMessages"
+                html-messages
+                @close="closeUpdateManagerDialog" />
+            <the-update-dialog
+                :show="firmwareBusy || firmwareMessages.length > 0"
+                :complete="!firmwareBusy"
+                :title="firmwareDialogTitle"
+                :messages="firmwareMessages"
+                @close="closeFirmwareDialog" />
             <the-editor />
             <the-timelapse-rendering-snackbar />
             <the-fullscreen-upload />
@@ -45,6 +57,8 @@ import TheScrewsTiltAdjustDialog from '@/components/dialogs/TheScrewsTiltAdjustD
 import { setAndLoadLocale } from './plugins/i18n'
 import TheMacroPrompt from '@/components/dialogs/TheMacroPrompt.vue'
 import { AppRoute } from '@/routes'
+import { FirmwareUpdateResponse } from '@/store/server/firmware/types'
+import { UpdateDialogMessage } from '@/store/server/updateManager/types'
 
 @Component({
     components: {
@@ -70,6 +84,71 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
         if (this.isPrinterPowerOff) title = this.$t('App.Titles.PrinterOff')
 
         return title
+    }
+
+    get updateManagerApplication(): string {
+        return this.$store.state.server.updateManager.updateResponse.application ?? ''
+    }
+
+    get updateManagerComplete(): boolean {
+        return this.$store.state.server.updateManager.updateResponse.complete ?? true
+    }
+
+    get updateManagerMessages(): UpdateDialogMessage[] {
+        return this.$store.state.server.updateManager.updateResponse.messages ?? []
+    }
+
+    get updateManagerDialogTitle(): string {
+        const application = this.updateManagerApplication
+
+        if (application.startsWith('recover_')) {
+            const software = application.slice(8)
+            if (!this.updateManagerComplete) return this.$t('App.UpdateDialog.Recovering', { software }).toString()
+
+            return this.$t('App.UpdateDialog.RecoveringDone', { software }).toString()
+        }
+
+        if (!this.updateManagerComplete)
+            return this.$t('App.UpdateDialog.Updating', { software: application }).toString()
+
+        return this.$t('App.UpdateDialog.UpdatingDone', { software: application }).toString()
+    }
+
+    closeUpdateManagerDialog() {
+        if (
+            this.updateManagerComplete &&
+            ['client', 'mainsail', 'full'].includes(this.updateManagerApplication.toLowerCase())
+        ) {
+            window.location.reload()
+            return
+        }
+
+        this.$store.commit('server/updateManager/resetUpdateResponse')
+        this.$socket.emit(
+            'machine.update.status',
+            { refresh: false },
+            { action: 'server/updateManager/onUpdateStatus' }
+        )
+    }
+
+    get firmwareBusy(): boolean {
+        return this.$store.state.server.firmware?.busy ?? false
+    }
+
+    get firmwareMessages(): UpdateDialogMessage[] {
+        const responses: FirmwareUpdateResponse[] = this.$store.getters['server/firmware/getResponses'] ?? []
+
+        return responses.map((response) => ({ message: response.message }))
+    }
+
+    get firmwareDialogTitle(): string {
+        if (this.firmwareBusy) return this.$t('Machine.FirmwarePanel.Updating').toString()
+
+        return this.$t('Machine.FirmwarePanel.UpdatesFinished').toString()
+    }
+
+    closeFirmwareDialog() {
+        this.$store.dispatch('server/firmware/closeDialog')
     }
 
     get naviDrawer(): boolean {
