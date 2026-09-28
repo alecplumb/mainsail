@@ -519,6 +519,37 @@
             "open": "OPEN",
             "TRIGGERED": "TRIGGERED"
         },
+        "FirmwarePanel": {
+            "Host": "Klipper host",
+            "HostHint": "MCU firmware is compared against this version",
+            "LostRun": "Lost track of the firmware update run; check the run log under logs/aldis.",
+            "MalformedStatus": "The firmware agent sent a status Mainsail could not read.",
+            "NotificationDescription": "The MCU {mcu} runs firmware {version}, but the Klipper host runs {hostVersion}. Update it in Machine → Firmware Updates.",
+            "NotificationTitle": "Firmware update available: {mcu}",
+            "NotRunning": "The aldis firmware agent is not running. Start the aldis service from the Services menu.",
+            "Refresh": "Refresh firmware status",
+            "RestartPendingHint": "Restart Klipper from the Services menu.",
+            "State": {
+                "current": "up-to-date",
+                "externally_managed": "external",
+                "indeterminate": "indeterminate",
+                "not_identified": "not identified",
+                "not_responding": "not responding",
+                "unsupported_legacy": "legacy",
+                "unsupported_mcu": "unsupported",
+                "update_available": "update available"
+            },
+            "StatusError": "Could not read firmware status: {message}. Refresh to try again.",
+            "Title": "Firmware Updates",
+            "UnknownVersion": "unknown",
+            "UnsupportedApi": "This version of Mainsail does not support aldis API version {version}.",
+            "Update": "update",
+            "UpdateAll": "Update all MCUs",
+            "UpdateQuestion": "This flashes new firmware to the MCU {mcus}. | This flashes new firmware to the MCUs {mcus}.",
+            "UpdateQuestionKlipper": "Klipper is stopped during the update and restarted afterwards. The printer must stay idle until the update has finished.",
+            "UpdatesFinished": "Firmware updates finished",
+            "Updating": "Updating firmware..."
+        },
         "LogfilesPanel": {
             "Accept": "accept",
             "Logfiles": "Log Files",
