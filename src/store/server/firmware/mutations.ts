@@ -59,7 +59,6 @@ export const mutations: MutationTree<FirmwareState> = {
         state.lastResult = null
         state.lastMessage = null
         state.resultRunId = null
-        state.dismissedRunId = null
         state.retried = false
     },
 
