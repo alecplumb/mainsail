@@ -165,7 +165,9 @@ const nestedAgentError = (error: unknown): Aldis.AgentError | null => {
     return null
 }
 
-export const agentErrorMessage = (error: unknown): string => {
+// null when there is no error to describe: Vue.$socket.emitAndWait rejects without a reason
+// while the socket is not open
+export const agentErrorMessage = (error: unknown): string | null => {
     const nested = nestedAgentError(error)
 
     if (nested) {
@@ -176,9 +178,8 @@ export const agentErrorMessage = (error: unknown): string => {
         return error.message
     }
 
-    // Vue.$socket.emitAndWait rejects without a reason while the socket is not open
     if (error == null) {
-        return 'no connection'
+        return null
     }
 
     return String(error)

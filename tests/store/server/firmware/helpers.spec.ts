@@ -428,7 +428,7 @@ describe('agentErrorMessage', () => {
 })
 
 describe('agentErrorMessage without a reason', () => {
-    it('reports a missing connection when the socket rejects without an error', () => {
-        expect(agentErrorMessage(undefined)).toBe('no connection')
+    it('returns null when the socket rejects without an error', () => {
+        expect(agentErrorMessage(undefined)).toBeNull()
     })
 })

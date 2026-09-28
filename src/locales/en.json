@@ -524,6 +524,7 @@
             "HostHint": "MCU firmware is compared against this version",
             "LostRun": "Lost track of the firmware update run; check the run log under logs/aldis.",
             "MalformedStatus": "The firmware agent sent a status Mainsail could not read.",
+            "NoConnection": "no connection to Moonraker",
             "NotificationDescription": "The MCU {mcu} runs firmware {version}, but the Klipper host runs {hostVersion}. Update it in Machine → Firmware Updates.",
             "NotificationTitle": "Firmware update available: {mcu}",
             "NotRunning": "The aldis firmware agent is not running. Start the aldis service from the Services menu.",

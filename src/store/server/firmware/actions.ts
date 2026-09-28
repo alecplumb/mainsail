@@ -18,6 +18,9 @@ import {
     unsupportedStatus,
 } from '@/store/server/firmware/helpers'
 
+const errorMessage = (error: unknown): string =>
+    agentErrorMessage(error) ?? i18n.t('Machine.FirmwarePanel.NoConnection').toString()
+
 const runStateOf = (state: FirmwareState): FirmwareRunState => ({
     busy: state.busy,
     runId: state.runId,
@@ -54,7 +57,7 @@ export const actions: ActionTree<FirmwareState, RootState> = {
 
             await dispatch('onStatus', payload)
         } catch (error: unknown) {
-            commit('setStatusError', agentErrorMessage(error))
+            commit('setStatusError', errorMessage(error))
         } finally {
             commit('removePendingRefresh')
         }
@@ -102,7 +105,7 @@ export const actions: ActionTree<FirmwareState, RootState> = {
         } catch (error: unknown) {
             commit('setBusy', false)
 
-            Vue.$toast.error(agentErrorMessage(error))
+            Vue.$toast.error(errorMessage(error))
 
             await dispatch('refresh')
         }
