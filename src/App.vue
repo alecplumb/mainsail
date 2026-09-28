@@ -57,7 +57,6 @@ import TheScrewsTiltAdjustDialog from '@/components/dialogs/TheScrewsTiltAdjustD
 import { setAndLoadLocale } from './plugins/i18n'
 import TheMacroPrompt from '@/components/dialogs/TheMacroPrompt.vue'
 import { AppRoute } from '@/routes'
-import { FirmwareUpdateResponse } from '@/store/server/firmware/types'
 import { UpdateDialogMessage } from '@/store/server/updateManager/types'
 
 @Component({
@@ -136,9 +135,7 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
     }
 
     get firmwareMessages(): UpdateDialogMessage[] {
-        const responses: FirmwareUpdateResponse[] = this.$store.getters['server/firmware/getResponses'] ?? []
-
-        return responses.map((response) => ({ message: response.message }))
+        return this.$store.state.server.firmware?.responses ?? []
     }
 
     get firmwareDialogTitle(): string {

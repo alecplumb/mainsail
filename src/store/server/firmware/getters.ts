@@ -1,10 +1,8 @@
 import { GetterTree } from 'vuex'
 import type { Aldis } from '@/types/aldis'
-import { FirmwareState, FirmwareUpdateResponse } from '@/store/server/firmware/types'
+import { FirmwareState } from '@/store/server/firmware/types'
 import { RootState } from '@/store/types'
-import { SUPPORTED_API_VERSION, updatableMcus } from '@/store/server/firmware/helpers'
-
-export const AGENT_NAME = 'aldis'
+import { AGENT_NAME, SUPPORTED_API_VERSION, updatableMcus } from '@/store/server/firmware/helpers'
 
 export const getters: GetterTree<FirmwareState, RootState> = {
     // the agent is connected to Moonraker
@@ -19,10 +17,6 @@ export const getters: GetterTree<FirmwareState, RootState> = {
 
     isRefreshing: (state): boolean => {
         return state.pendingRefreshes > 0
-    },
-
-    isLoading: (state, getters): boolean => {
-        return getters.isSupported && state.status === null && getters.isRefreshing
     },
 
     isApiSupported: (state): boolean => {
@@ -45,19 +39,11 @@ export const getters: GetterTree<FirmwareState, RootState> = {
         return updatableMcus(state.status)
     },
 
-    hasUpdates: (state): boolean => {
-        return updatableMcus(state.status).length > 0
-    },
-
     // MCUs whose firmware differs from the running Klipper host, regardless of blockers
     getOutdatedMcus: (state, getters): Aldis.Mcu[] => {
         if (!getters.isSupported) return []
 
         return getters.getMcus.filter((mcu: Aldis.Mcu) => mcu.state === 'update_available')
-    },
-
-    getResponses: (state): FirmwareUpdateResponse[] => {
-        return [...state.responses]
     },
 
     getStatusError: (state): string | null => {

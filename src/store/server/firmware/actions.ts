@@ -5,8 +5,8 @@ import type { Aldis } from '@/types/aldis'
 import type { MoonrakerAgentEvent } from '@/types/moonraker/ServerRPC'
 import { FirmwareRunState, FirmwareState } from '@/store/server/firmware/types'
 import { RootState } from '@/store/types'
-import { AGENT_NAME } from '@/store/server/firmware/getters'
 import {
+    AGENT_NAME,
     SUPPORTED_API_VERSION,
     agentErrorMessage,
     apiVersionOf,

@@ -1,6 +1,7 @@
 import type { Aldis } from '@/types/aldis'
 import type { FirmwareRunState, FirmwareUpdateResponse } from './types'
 
+export const AGENT_NAME = 'aldis'
 export const SUPPORTED_API_VERSION = 1
 
 const KNOWN_UPDATABLE_STATES: readonly string[] = ['update_available']
