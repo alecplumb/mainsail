@@ -127,9 +127,11 @@ export const actions: ActionTree<FirmwareState, RootState> = {
             const message = i18n.t('Machine.FirmwarePanel.LostRun').toString()
             const current = runStateOf(state)
 
+            // forget the run id so a reconnected agent that still runs it can be picked up again
             commit('setRunState', {
                 ...current,
                 busy: false,
+                runId: null,
                 responses: [...current.responses, { id: current.responses.length, message, mcu: null, phase: 'done' }],
                 lastMessage: message,
             })
