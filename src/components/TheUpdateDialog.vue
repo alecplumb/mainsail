@@ -135,6 +135,9 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
 
     @Watch('messages')
     messagesChanged() {
+        // the log only exists once the dialog has been shown (v-dialog renders lazily)
+        if (!this.show) return
+
         setTimeout(() => {
             this.updaterLogScroll.osInstance()?.scroll({ y: '100%' })
         }, 50)
