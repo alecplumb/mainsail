@@ -174,6 +174,20 @@ export const mutations: MutationTree<ServerState> = {
         Vue.set(state, 'failed_init_components', failed_init_components)
     },
 
+    setAgentsLoaded(state, payload: boolean) {
+        Vue.set(state, 'agentsLoaded', payload)
+    },
+
+    setAgents(state, payload: string[]) {
+        Vue.set(state, 'agents', [...payload])
+    },
+
+    setAgentConnected(state, payload: { name: string; connected: boolean }) {
+        const others = state.agents.filter((name) => name !== payload.name)
+
+        Vue.set(state, 'agents', payload.connected ? [...others, payload.name] : others)
+    },
+
     removeComponent(state, payload) {
         const components = state.components
         const index = components.indexOf(payload)

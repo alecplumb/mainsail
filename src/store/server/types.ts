@@ -2,6 +2,7 @@ import { ServerPowerState } from '@/store/server/power/types'
 import { ServerUpdateManagerState } from '@/store/server/updateManager/types'
 import { ServerHistoryState } from '@/store/server/history/types'
 import { ServerTimelapseState } from '@/store/server/timelapse/types'
+import { FirmwareState } from '@/store/server/firmware/types'
 
 export interface ServerState {
     klippy_connected: boolean
@@ -56,6 +57,9 @@ export interface ServerState {
     dbNamespaces: string[]
     websocket_count: number
     moonraker_version: string
+    // names of the connected Moonraker agents (server.extensions.list)
+    agents: string[]
+    agentsLoaded: boolean
 
     console_cleared_this_session?: boolean
 
@@ -63,6 +67,7 @@ export interface ServerState {
     updateManager?: ServerUpdateManagerState
     history?: ServerHistoryState
     timelapse?: ServerTimelapseState
+    firmware?: FirmwareState
 }
 
 export interface ServerStateEvent {

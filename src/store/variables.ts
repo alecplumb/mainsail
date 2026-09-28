@@ -1,4 +1,5 @@
 import { KlipperRepos, Theme } from '@/store/types'
+import type { AgentRegistration } from '@/plugins/agentEvents'
 
 export const defaultMode = 'dark'
 export const defaultTheme = 'mainsail'
@@ -50,6 +51,20 @@ export const initableServerComponents = [
     'announcements',
     'spoolman',
     'sensor',
+]
+
+/*
+ * List of supported Moonraker agents (server.extensions). These are not Moonraker components,
+ * so they must never be added to initableServerComponents.
+ */
+export const moonrakerAgents: AgentRegistration[] = [
+    {
+        name: 'aldis',
+        dispatch: 'server/firmware/init',
+        eventDispatch: 'server/firmware/onAgentEvent',
+        disconnectDispatch: 'server/firmware/onAgentDisconnected',
+        klippyDispatch: 'server/firmware/onKlippyStateChanged',
+    },
 ]
 
 /*

@@ -4,7 +4,8 @@ import { ActionTree } from 'vuex'
 import { ServerState, ServerStateEvent } from '@/store/server/types'
 import { camelize, formatConsoleMessage } from '@/plugins/helpers'
 import { RootState } from '@/store/types'
-import { initableServerComponents } from '@/store/variables'
+import { initableServerComponents, moonrakerAgents } from '@/store/variables'
+import type { MoonrakerAgentInfo } from '@/types/moonraker/ServerRPC'
 
 export const actions: ActionTree<ServerState, RootState> = {
     reset({ commit, dispatch }) {
@@ -14,6 +15,7 @@ export const actions: ActionTree<ServerState, RootState> = {
         commit('reset')
         dispatch('power/reset')
         dispatch('updateManager/reset')
+        dispatch('firmware/reset')
     },
 
     async init({ commit, dispatch, rootState }) {
@@ -73,7 +75,7 @@ export const actions: ActionTree<ServerState, RootState> = {
         dispatch('socket/removeInitModule', 'server/databaseList', { root: true })
     },
 
-    initServerInfo({ dispatch, commit }, payload) {
+    initServerInfo({ dispatch, commit, state }, payload) {
         // delete old plugin entries
         if ('plugins' in payload) delete payload.plugins
         if ('failed_plugins' in payload) delete payload.failed_plugins
@@ -94,7 +96,72 @@ export const actions: ActionTree<ServerState, RootState> = {
         }
 
         commit('setData', payload)
+
+        // agents (server.extensions) are not components; list them once per connection
+        if (!state.agentsLoaded) {
+            commit('setAgentsLoaded', true)
+            dispatch('refreshAgents')
+        }
+
         dispatch('socket/removeInitModule', 'server/info', { root: true })
+    },
+
+    resetAgents({ commit, dispatch }) {
+        commit('setAgents', [])
+        commit('setAgentsLoaded', false)
+        dispatch('firmware/reset')
+    },
+
+    async refreshAgents({ dispatch }) {
+        let agents: MoonrakerAgentInfo[]
+
+        try {
+            const result = await Vue.$socket.emitAndWait('server.extensions.list')
+            agents = result.agents ?? []
+        } catch {
+            // Moonraker without agent support, or the socket closed meanwhile
+            return
+        }
+
+        await dispatch('onExtensionsList', { agents })
+    },
+
+    async onExtensionsList({ commit, dispatch }, payload: { agents: MoonrakerAgentInfo[] }) {
+        commit(
+            'setAgents',
+            payload.agents.map((agent) => agent.name)
+        )
+
+        await dispatch('initAgents')
+    },
+
+    async initAgents({ state, dispatch }) {
+        const promises = moonrakerAgents
+            .filter((agent) => state.agents.includes(agent.name))
+            .map((agent) => dispatch(agent.dispatch, undefined, { root: true }))
+
+        await Promise.all(promises)
+    },
+
+    async onKlippyStateChanged({ state, dispatch }) {
+        const promises = moonrakerAgents
+            .filter((agent) => agent.klippyDispatch && state.agents.includes(agent.name))
+            .map((agent) => dispatch(agent.klippyDispatch as string, undefined, { root: true }))
+
+        await Promise.all(promises)
+    },
+
+    async onAgentConnected({ commit, dispatch }, name: string) {
+        commit('setAgentConnected', { name, connected: true })
+
+        await dispatch('initAgents')
+    },
+
+    async onAgentDisconnected({ commit, dispatch }, name: string) {
+        commit('setAgentConnected', { name, connected: false })
+
+        const agent = moonrakerAgents.find((agent) => agent.name === name)
+        if (agent?.disconnectDispatch) await dispatch(agent.disconnectDispatch, undefined, { root: true })
     },
 
     initServerConfig({ commit, dispatch }, payload) {
@@ -191,9 +258,12 @@ export const actions: ActionTree<ServerState, RootState> = {
         commit('setKlippyStateTimer', null)
     },
 
-    checkKlippyState({ commit, dispatch }, payload: { state: string; state_message: string | null }) {
+    checkKlippyState({ commit, dispatch, state }, payload: { state: string; state_message: string | null }) {
+        const klippyStateChanged = state.klippy_state !== '' && state.klippy_state !== payload.state
+
         commit('setKlippyState', payload.state)
         commit('setKlippyMessage', payload.state_message)
+        if (klippyStateChanged) dispatch('onKlippyStateChanged')
 
         if (payload.state !== 'ready') {
             dispatch('startKlippyStateInterval')

@@ -32,6 +32,10 @@ export const getters: GetterTree<ServerState, RootState> = {
             return reverse ? events.reverse() : events
         },
 
+    agentSupport: (state) => (agent: string) => {
+        return state.agents.includes(agent)
+    },
+
     getConfig: (state) => (section: string, attribute: string) => {
         const config = state.config?.config ?? {}
 
